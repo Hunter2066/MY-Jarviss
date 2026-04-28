@@ -3,28 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>J.A.R.V.I.S. Elite</title>
+    <title>J.A.R.V.I.S. Mark 7</title>
     <style>
-        :root { --glow: #00d2ff; }
+        :root { --glow: #00d2ff; --bg: #000; }
         body {
-            margin: 0; height: 100vh; background: #000;
+            margin: 0; height: 100vh; background: var(--bg);
             display: flex; flex-direction: column; justify-content: center;
-            align-items: center; color: var(--glow); font-family: 'Segoe UI', monospace;
+            align-items: center; color: var(--glow); font-family: 'Segoe UI', Tahoma, sans-serif;
             overflow: hidden;
         }
         .arc-reactor {
             width: 140px; height: 140px; border-radius: 50%;
             border: 4px solid var(--glow); display: flex; 
             justify-content: center; align-items: center;
-            box-shadow: 0 0 30px var(--glow), inset 0 0 15px var(--glow);
+            box-shadow: 0 0 35px var(--glow), inset 0 0 15px var(--glow);
             cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .arc-reactor:active { transform: scale(0.9); }
-        .inner-core { width: 45px; height: 45px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 20px #fff; }
+        .inner-core { width: 40px; height: 40px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 25px #fff; }
+        
         #response-bubble {
             margin-top: 30px; padding: 20px; border: 1px solid var(--glow);
-            border-radius: 12px; width: 85%; max-height: 40vh; overflow-y: auto;
-            background: rgba(0, 210, 255, 0.03); display: none; line-height: 1.6;
+            border-radius: 12px; width: 85%; max-height: 45vh; overflow-y: auto;
+            background: rgba(0, 210, 255, 0.04); display: none; line-height: 1.6;
             font-size: 0.95rem; text-shadow: 0 0 5px rgba(0, 210, 255, 0.3);
         }
         #status { margin-top: 20px; font-size: 0.7rem; letter-spacing: 4px; text-transform: uppercase; opacity: 0.6; }
@@ -36,9 +37,9 @@
 <body>
 
     <div class="arc-reactor" id="jarvisBtn"><div class="inner-core"></div></div>
-    <div id="response-bubble">SYSTEM ONLINE</div>
+    <div id="response-bubble">SYSTEM CALIBRATED</div>
     <div class="loader" id="loader"></div>
-    <div id="status">AWAITING COMMAND</div>
+    <div id="status">AWAITING INPUT</div>
 
     <script>
         const btn = document.getElementById('jarvisBtn');
@@ -46,42 +47,43 @@
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
-        // NEWEST 2026 STABLE API KEY
+        // INTEGRATED 2026 STABLE KEY
         const API_KEY = "AIzaSyDwBmpDJhFZkZ4pUvN4hixLfIorTn7yn5w";
         const synth = window.speechSynthesis;
 
+        // British Male Voice Protocol
         const jarvisSays = (text) => {
             bubble.innerText = text;
             bubble.style.display = 'block';
             synth.cancel();
-            const msg = new SpeechSynthesisUtterance(text);
             
-            // Wait for voices to load
+            const msg = new SpeechSynthesisUtterance(text);
             const voices = synth.getVoices();
-            // Specifically looks for "UK Male"
+            
+            // Priority: Google UK Male -> System UK -> First available
             const jarvisVoice = voices.find(v => v.name.includes('UK') && v.name.includes('Male')) || 
                                voices.find(v => v.lang === 'en-GB') || 
                                voices[0];
             
             if (jarvisVoice) msg.voice = jarvisVoice;
-            msg.rate = 0.95; 
-            msg.pitch = 0.85; 
+            msg.rate = 0.92; // Sophisticated pace
+            msg.pitch = 0.88; // Deeper tone
             synth.speak(msg);
         };
 
         async function fetchAI(promptText) {
             loader.style.display = 'block';
-            statusText.innerText = "ACCESSING GEMINI 3.1 FLASH...";
+            statusText.innerText = "ACCESSING GEMINI 3.1 FLASH-LITE...";
             
             try {
-                // v1 STABLE ENDPOINT
-                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+                // April 2026 Stable Endpoint & Model ID
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite-preview:generateContent?key=${API_KEY}`;
                 
                 const response = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `You are J.A.R.V.I.S. witty AI. Address user as Sir. Be brief. ${promptText}` }] }]
+                        contents: [{ parts: [{ text: `You are J.A.R.V.I.S., the sophisticated AI from Iron Man. Be witty and call the user 'Sir'. Response: ${promptText}` }] }]
                     })
                 });
 
@@ -89,30 +91,25 @@
                 loader.style.display = 'none';
 
                 if (data.candidates && data.candidates[0].content) {
-                    statusText.innerText = "CONNECTED";
+                    statusText.innerText = "ONLINE";
                     return data.candidates[0].content.parts[0].text;
-                } else if (data.error) {
-                    return `Sir, the server responded with Error ${data.error.code}: ${data.error.message}`;
                 } else {
-                    return "Sir, I am receiving a null signal. Please verify that the Generative Language API is enabled in your Google Cloud Console.";
+                    const errorMsg = data.error ? data.error.message : "Neural link timeout.";
+                    return `Sir, I encountered a discrepancy: ${errorMsg}`;
                 }
             } catch (e) {
                 loader.style.display = 'none';
-                return "Critical communication blackout, Sir. The browser is blocking the request.";
+                return "Critical communication failure. The uplink has been severed, Sir.";
             }
         }
 
-        const handleAction = async (cmd) => {
+        const handleCommand = async (cmd) => {
             const input = cmd.toLowerCase().trim();
             if (input.includes("time")) {
-                jarvisSays("It is " + new Date().toLocaleTimeString() + ", Sir.");
+                jarvisSays("The time is " + new Date().toLocaleTimeString() + ", Sir.");
             } else if (input.includes("youtube")) {
-                jarvisSays("Opening YouTube, Sir.");
+                jarvisSays("Opening YouTube archives, Sir.");
                 setTimeout(() => { window.location.href = "https://www.youtube.com"; }, 1500);
-            } else if (input.includes("google") || input.startsWith("search")) {
-                const query = input.replace("google", "").replace("search", "").trim();
-                jarvisSays(`Searching for ${query}, Sir.`);
-                setTimeout(() => { window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`; }, 1500);
             } else {
                 const response = await fetchAI(cmd);
                 jarvisSays(response);
@@ -121,17 +118,16 @@
 
         btn.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(50);
-            // Audio unlock
+            // Unlock audio for mobile
             synth.speak(new SpeechSynthesisUtterance("")); 
             const userIn = prompt("Awaiting Command, Sir:");
-            if (userIn) handleAction(userIn);
+            if (userIn) handleCommand(userIn);
         });
 
-        // Ensure voices are ready
+        // Refresh voice list
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = () => synth.getVoices();
         }
     </script>
 </body>
 </html>
-
