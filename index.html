@@ -73,8 +73,8 @@
             loader.style.display = 'block';
             statusText.innerText = "QUERYING IGRIS NEURAL ENGINE...";
             
-            // Model list optimized for 2026 quota management
-            const models = ["gemini-1.5-flash-8b", "gemini-1.5-flash", "gemini-2.0-flash"];
+            // Igris 2026 Model Fallback Logic
+            const models = ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-2.0-flash"];
             
             for (const model of models) {
                 try {
@@ -83,22 +83,28 @@
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: `Your name is Igris. You are a loyal, witty British AI. Address user as Sir. ${promptText}` }] }]
+                            contents: [{ parts: [{ text: `Your name is Igris. You are a loyal, witty British AI. Always call user 'Sir'. Keep it short. Question: ${promptText}` }] }]
                         })
                     });
 
                     const data = await response.json();
+                    
+                    // Handle Quota Exhausted
+                    if (data.error && data.error.status === "RESOURCE_EXHAUSTED") {
+                        console.warn(`Model ${model} limit reached, trying next model...`);
+                        continue; 
+                    }
+
                     if (data.candidates && data.candidates[0].content) {
                         loader.style.display = 'none';
                         statusText.innerText = "CONNECTED";
                         return data.candidates[0].content.parts[0].text;
                     }
-                    if (data.error && data.error.status === "RESOURCE_EXHAUSTED") continue;
-                } catch (e) { console.warn(`Model ${model} unavailable.`); }
+                } catch (e) { console.error(`Error with model ${model}`); }
             }
             
             loader.style.display = 'none';
-            return "Sir, I've hit a quota wall. Google's servers require a moment to reset our bandwidth.";
+            return "Sir, I've hit a quota wall across all stable models. Google's servers require a moment to reset our bandwidth.";
         }
 
         const handleCommand = async (cmd) => {
