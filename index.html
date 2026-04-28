@@ -47,7 +47,7 @@
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
-        // STABLE 2026 API KEY
+        // Note: Ensure this key is active in Google AI Studio
         const API_KEY = "AIzaSyCWxK7dH7SRgYfQcIN-GvvbcbtAmy90YTk";
         const synth = window.speechSynthesis;
 
@@ -59,14 +59,13 @@
             const msg = new SpeechSynthesisUtterance(text);
             const voices = synth.getVoices();
             
-            // Priority: British Male profile
             const preferredVoice = voices.find(v => v.name.includes('UK') && v.name.includes('Male')) || 
                                    voices.find(v => v.lang === 'en-GB') || 
                                    voices[0];
             
             if (preferredVoice) msg.voice = preferredVoice;
-            msg.rate = 0.92; 
-            msg.pitch = 0.88; 
+            msg.rate = 0.95; 
+            msg.pitch = 0.9; 
             synth.speak(msg);
         };
 
@@ -75,28 +74,35 @@
             statusText.innerText = "QUERYING I.H.R.I.S. CORE...";
             
             try {
-                // v1 STABLE with Gemini 3.1 Flash-Lite
-                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+                // Updated to v1beta for better compatibility with 2026 models
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
                 
                 const response = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Your name is I.H.R.I.S. (pronounced 'Iris'). You are a sophisticated, witty British AI assistant. Always call the user 'Sir'. Be brief. Question: ${promptText}` }] }]
+                        contents: [{ parts: [{ text: `System: You are I.H.R.I.S., a witty British AI. Address user as 'Sir'. User asked: ${promptText}` }] }]
                     })
                 });
 
                 const data = await response.json();
                 loader.style.display = 'none';
 
+                if (data.error) {
+                    console.error("API Error:", data.error.message);
+                    return "Sir, the API key seems to be rejected. Please verify the credentials.";
+                }
+
                 if (data.candidates && data.candidates[0].content) {
                     statusText.innerText = "CONNECTED";
                     return data.candidates[0].content.parts[0].text;
                 } else {
-                    return "Sir, the neural link is experiencing a discrepancy. Please check the API status.";
+                    return "Sir, the neural link is experiencing a discrepancy. The response was empty.";
                 }
             } catch (e) {
                 loader.style.display = 'none';
+                // This alert helps you debug on your phone
+                alert("Connection Error: " + e.message);
                 return "Critical communication failure. Uplink severed, Sir.";
             }
         }
@@ -116,14 +122,13 @@
 
         btn.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(50);
-            synth.speak(new SpeechSynthesisUtterance("")); // Unlock audio
             const userIn = prompt("Awaiting Command, Sir:");
             if (userIn) handleCommand(userIn);
         });
 
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = () => synth.getVoices();
-        }
+        window.speechSynthesis.onvoiceschanged = () => {
+            synth.getVoices();
+        };
     </script>
 </body>
 </html>
