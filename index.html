@@ -47,8 +47,8 @@
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
-        // Note: Ensure this key is active in Google AI Studio
-        const API_KEY = "AIzaSyCWxK7dH7SRgYfQcIN-GvvbcbtAmy90YTk";
+        // NEW API KEY APPLIED
+        const API_KEY = "AIzaSyDwBmpDJhFZkZ4pUvN4hixLfIorTn7yn5w";
         const synth = window.speechSynthesis;
 
         const ihrisSays = (text) => {
@@ -59,6 +59,7 @@
             const msg = new SpeechSynthesisUtterance(text);
             const voices = synth.getVoices();
             
+            // Priority: British Male profile
             const preferredVoice = voices.find(v => v.name.includes('UK') && v.name.includes('Male')) || 
                                    voices.find(v => v.lang === 'en-GB') || 
                                    voices[0];
@@ -74,14 +75,14 @@
             statusText.innerText = "QUERYING I.H.R.I.S. CORE...";
             
             try {
-                // Updated to v1beta for better compatibility with 2026 models
+                // Using v1beta for Gemini 1.5 Flash
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
                 
                 const response = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `System: You are I.H.R.I.S., a witty British AI. Address user as 'Sir'. User asked: ${promptText}` }] }]
+                        contents: [{ parts: [{ text: `System: You are I.H.R.I.S., a witty British AI assistant. Address the user as 'Sir'. Keep responses concise and sophisticated. Question: ${promptText}` }] }]
                     })
                 });
 
@@ -89,20 +90,18 @@
                 loader.style.display = 'none';
 
                 if (data.error) {
-                    console.error("API Error:", data.error.message);
-                    return "Sir, the API key seems to be rejected. Please verify the credentials.";
+                    console.error(data.error);
+                    return "Sir, the neural link is experiencing a discrepancy. Error: " + data.error.message;
                 }
 
                 if (data.candidates && data.candidates[0].content) {
                     statusText.innerText = "CONNECTED";
                     return data.candidates[0].content.parts[0].text;
                 } else {
-                    return "Sir, the neural link is experiencing a discrepancy. The response was empty.";
+                    return "Sir, the core is unresponsive. Please verify the uplink.";
                 }
             } catch (e) {
                 loader.style.display = 'none';
-                // This alert helps you debug on your phone
-                alert("Connection Error: " + e.message);
                 return "Critical communication failure. Uplink severed, Sir.";
             }
         }
@@ -120,15 +119,5 @@
             }
         };
 
-        btn.addEventListener('click', () => {
-            if (navigator.vibrate) navigator.vibrate(50);
-            const userIn = prompt("Awaiting Command, Sir:");
-            if (userIn) handleCommand(userIn);
-        });
-
-        window.speechSynthesis.onvoiceschanged = () => {
-            synth.getVoices();
-        };
-    </script>
-</body>
-</html>
+        btn.addEventListener
+        
