@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Igris. Mark 8</title>
+    <title>Igris Neural Link</title>
     <style>
-        :root { --glow: #00d2ff; }
+        :root { --glow: #00d2ff; --bg: #000; }
         body {
-            margin: 0; height: 100vh; background: #000;
+            margin: 0; height: 100vh; background: var(--bg);
             display: flex; flex-direction: column; justify-content: center;
-            align-items: center; color: var(--glow); font-family: 'Segoe UI', monospace;
+            align-items: center; color: var(--glow); font-family: 'Segoe UI', Tahoma, sans-serif;
             overflow: hidden;
         }
         .arc-reactor {
@@ -20,11 +20,12 @@
             cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .arc-reactor:active { transform: scale(0.9); }
-        .inner-core { width: 45px; height: 45px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 25px #fff; }
+        .inner-core { width: 40px; height: 40px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 25px #fff; }
+        
         #response-bubble {
             margin-top: 30px; padding: 20px; border: 1px solid var(--glow);
             border-radius: 12px; width: 85%; max-height: 45vh; overflow-y: auto;
-            background: rgba(0, 210, 255, 0.03); display: none; line-height: 1.6;
+            background: rgba(0, 210, 255, 0.04); display: none; line-height: 1.6;
             font-size: 0.95rem; text-shadow: 0 0 5px rgba(0, 210, 255, 0.3);
         }
         #status { margin-top: 20px; font-size: 0.7rem; letter-spacing: 4px; text-transform: uppercase; opacity: 0.6; }
@@ -35,91 +36,94 @@
 </head>
 <body>
 
-    <div class="arc-reactor" id="jarvisBtn"><div class="inner-core"></div></div>
-    <div id="response-bubble">SYSTEM ONLINE</div>
+    <div class="arc-reactor" id="igrisBtn"><div class="inner-core"></div></div>
+    <div id="response-bubble">IGRIS ONLINE</div>
     <div class="loader" id="loader"></div>
     <div id="status">AWAITING COMMAND</div>
 
     <script>
-        const btn = document.getElementById('jarvisBtn');
+        const btn = document.getElementById('igrisBtn');
         const statusText = document.getElementById('status');
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
-        // NEW 2026 STABLE KEY
+        // STABLE 2026 API KEY
         const API_KEY = "AIzaSyCWxK7dH7SRgYfQcIN-GvvbcbtAmy90YTk";
         const synth = window.speechSynthesis;
 
-        const jarvisSays = (text) => {
+        const igrisSays = (text) => {
             bubble.innerText = text;
             bubble.style.display = 'block';
             synth.cancel();
+            
             const msg = new SpeechSynthesisUtterance(text);
-            
             const voices = synth.getVoices();
-            // Look for "UK Male" (Paul Bettany style)
-            const jarvisVoice = voices.find(v => v.name.includes('UK') && v.name.includes('Male')) || 
-                               voices.find(v => v.lang === 'en-GB') || 
-                               voices[0];
             
-            if (jarvisVoice) msg.voice = jarvisVoice;
-            msg.rate = 0.95; 
-            msg.pitch = 0.85; 
+            // Priority: British Male Voice
+            const preferredVoice = voices.find(v => v.name.includes('UK') && v.name.includes('Male')) || 
+                                   voices.find(v => v.lang === 'en-GB') || 
+                                   voices[0];
+            
+            if (preferredVoice) msg.voice = preferredVoice;
+            msg.rate = 0.92; 
+            msg.pitch = 0.88; 
             synth.speak(msg);
         };
 
         async function fetchAI(promptText) {
             loader.style.display = 'block';
-            statusText.innerText = "UPLINKING TO GEMINI 3.1 FLASH...";
+            statusText.innerText = "QUERYING IGRIS NEURAL ENGINE...";
             
-            // 2026 Stable Model List
-            const models = ["gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-2.5-flash"];
-            
-            for (const model of models) {
-                try {
-                    // v1 STABLE ENDPOINT
-                    const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${API_KEY}`;
-                    
-                    const response = await fetch(url, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: `You are J.A.R.V.I.S., a witty AI. Call user Sir. Answer briefly: ${promptText}` }] }]
-                        })
-                    });
+            try {
+                // v1 STABLE ENDPOINT with latest Gemini 1.5 Flash Support
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+                
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `Your name is Igris. You are a sophisticated, witty, and loyal British AI assistant. Always call the user 'Sir'. Be brief and professional. Question: ${promptText}` }] }]
+                    })
+                });
 
-                    const data = await response.json();
-                    if (data.candidates && data.candidates[0].content) {
-                        loader.style.display = 'none';
-                        statusText.innerText = "CONNECTED";
-                        return data.candidates[0].content.parts[0].text;
-                    }
-                } catch (e) { console.warn(`Model ${model} failed, trying next...`); }
+                const data = await response.json();
+                loader.style.display = 'none';
+
+                if (data.candidates && data.candidates[0].content) {
+                    statusText.innerText = "CONNECTED";
+                    return data.candidates[0].content.parts[0].text;
+                } else if (data.error) {
+                    return `Sir, the mainframe returned an error: ${data.error.message}`;
+                } else {
+                    return "Sir, I am unable to parse the current neural stream. System check required.";
+                }
+            } catch (e) {
+                loader.style.display = 'none';
+                return "Critical communication failure. Uplink severed, Sir.";
             }
-            loader.style.display = 'none';
-            return "Sir, I'm afraid all neural models are currently unresponsive. Please check your API billing tier.";
         }
 
-        const handleAction = async (cmd) => {
+        const handleCommand = async (cmd) => {
             const input = cmd.toLowerCase().trim();
             if (input.includes("time")) {
-                jarvisSays("The time is " + new Date().toLocaleTimeString() + ", Sir.");
+                igrisSays("The time is " + new Date().toLocaleTimeString() + ", Sir.");
             } else if (input.includes("youtube")) {
-                jarvisSays("Accessing YouTube database, Sir.");
+                igrisSays("Accessing YouTube archives, Sir.");
                 setTimeout(() => { window.location.href = "https://www.youtube.com"; }, 1500);
             } else {
                 const response = await fetchAI(cmd);
-                jarvisSays(response);
+                igrisSays(response);
             }
         };
 
         btn.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(50);
-            synth.speak(new SpeechSynthesisUtterance("")); // Audio wake-up
+            synth.speak(new SpeechSynthesisUtterance("")); // Unlock audio for mobile browsers
             const userIn = prompt("Awaiting Command, Sir:");
-            if (userIn) handleAction(userIn);
+            if (userIn) handleCommand(userIn);
         });
 
+        // Initialize voice engine
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = () => synth.getVoices();
         }
