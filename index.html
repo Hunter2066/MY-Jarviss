@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>J.A.R.V.I.S. 2026 Edition</title>
+    <title>J.A.R.V.I.S. 2026</title>
     <style>
         :root { --glow: #00d2ff; }
         body {
@@ -13,22 +13,23 @@
             overflow: hidden;
         }
         .arc-reactor {
-            width: 150px; height: 150px; border-radius: 50%;
+            width: 140px; height: 140px; border-radius: 50%;
             border: 4px solid var(--glow); display: flex; 
             justify-content: center; align-items: center;
             box-shadow: 0 0 30px var(--glow), inset 0 0 15px var(--glow);
-            cursor: pointer; transition: 0.3s;
+            cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .inner-core { width: 50px; height: 50px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 20px #fff; }
+        .arc-reactor:active { transform: scale(0.9); }
+        .inner-core { width: 45px; height: 45px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 20px #fff; }
         #response-bubble {
             margin-top: 30px; padding: 20px; border: 1px solid var(--glow);
-            border-radius: 10px; width: 85%; max-height: 40vh; overflow-y: auto;
-            background: rgba(0, 210, 255, 0.05); display: none; line-height: 1.5;
-            font-size: 0.95rem; text-shadow: 0 0 5px rgba(0, 210, 255, 0.5);
+            border-radius: 12px; width: 85%; max-height: 40vh; overflow-y: auto;
+            background: rgba(0, 210, 255, 0.03); display: none; line-height: 1.6;
+            font-size: 0.95rem; text-shadow: 0 0 5px rgba(0, 210, 255, 0.3);
         }
-        #status { margin-top: 20px; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.7; }
+        #status { margin-top: 20px; font-size: 0.7rem; letter-spacing: 4px; text-transform: uppercase; opacity: 0.6; }
         .loader { width: 80%; height: 2px; background: #111; margin-top: 15px; position: relative; overflow: hidden; display: none; }
-        .loader::after { content: ''; position: absolute; width: 40%; height: 100%; background: var(--glow); animation: scan 1.5s infinite; }
+        .loader::after { content: ''; position: absolute; width: 40%; height: 100%; background: var(--glow); animation: scan 1.2s infinite ease-in-out; }
         @keyframes scan { 0% { left: -40%; } 100% { left: 100%; } }
     </style>
 </head>
@@ -45,6 +46,7 @@
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
+        // UPDATED API KEY
         const API_KEY = "AIzaSyDwBmpDJhFZkZ4pUvN4hixLfIorTn7yn5w";
 
         const jarvisSays = (text) => {
@@ -52,47 +54,51 @@
             bubble.style.display = 'block';
             window.speechSynthesis.cancel();
             const msg = new SpeechSynthesisUtterance(text);
-            msg.rate = 1.0; msg.pitch = 0.85; 
+            msg.rate = 1.05; msg.pitch = 0.85; 
             window.speechSynthesis.speak(msg);
         };
 
-        async function askGemini(promptText, modelName = "gemini-2.5-flash") {
+        async function askGemini(promptText) {
             loader.style.display = 'block';
-            statusText.innerText = `CONNECTING TO ${modelName.toUpperCase()}...`;
+            statusText.innerText = "UPLINKING TO GEMINI 3 FLASH...";
             
-            try {
-                // Using the v1 endpoint for better stability in 2026
-                const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${API_KEY}`;
-                
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `You are J.A.R.V.I.S. witty AI. Address user as Sir. Answer: ${promptText}` }] }]
-                    })
-                });
+            // 2026 STABLE MODELS
+            const models = ["gemini-3-flash-preview", "gemini-3.1-flash-lite-preview", "gemini-2.5-flash"];
+            
+            for (let model of models) {
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${API_KEY}`;
+                    
+                    const response = await fetch(url, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: `You are J.A.R.V.I.S., a witty AI assistant. Call the user 'Sir'. Be brief. Answer: ${promptText}` }] }]
+                        })
+                    });
 
-                const data = await response.json();
-                loader.style.display = 'none';
-
-                if (data.candidates && data.candidates[0].content) {
-                    return data.candidates[0].content.parts[0].text;
-                } else if (modelName === "gemini-2.5-flash") {
-                    // AUTO-RETRY with Backup model if Flash fails
-                    return await askGemini(promptText, "gemini-2.5-pro");
-                } else {
-                    return "Sir, all satellite links are returning 404. We may need to verify the regional availability of these models.";
+                    const data = await response.json();
+                    
+                    if (data.candidates && data.candidates[0].content) {
+                        loader.style.display = 'none';
+                        statusText.innerText = "CONNECTED";
+                        return data.candidates[0].content.parts[0].text;
+                    }
+                } catch (e) {
+                    console.warn(`Model ${model} failed, trying next...`);
                 }
-            } catch (error) {
-                loader.style.display = 'none';
-                return "Critical communication failure, Sir.";
             }
+            
+            loader.style.display = 'none';
+            return "Sir, I've cycled through all available neural models, but the connection is being refused. Please verify your Google Cloud Billing status.";
         }
 
         const handleCommand = async (command) => {
             const input = command.toLowerCase().trim();
-            if (input.includes("youtube")) {
-                jarvisSays("Opening YouTube, Sir.");
+            if (input.includes("time")) {
+                jarvisSays("It is " + new Date().toLocaleTimeString() + ", Sir.");
+            } else if (input.includes("youtube")) {
+                jarvisSays("Accessing YouTube database.");
                 setTimeout(() => { window.location.href = "https://www.youtube.com"; }, 1500);
             } else {
                 const aiResponse = await askGemini(command);
@@ -101,6 +107,7 @@
         };
 
         btn.addEventListener('click', () => {
+            if (navigator.vibrate) navigator.vibrate(60);
             window.speechSynthesis.speak(new SpeechSynthesisUtterance("")); 
             const userIn = prompt("Awaiting Command, Sir:");
             if (userIn) handleCommand(userIn);
