@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>J.A.R.V.I.S. Elite</title>
+    <title>J.A.R.V.I.S. 2026 Edition</title>
     <style>
         :root { --glow: #00d2ff; }
         body {
@@ -20,7 +20,6 @@
             cursor: pointer; transition: 0.3s;
         }
         .inner-core { width: 50px; height: 50px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 20px #fff; }
-        
         #response-bubble {
             margin-top: 30px; padding: 20px; border: 1px solid var(--glow);
             border-radius: 10px; width: 85%; max-height: 40vh; overflow-y: auto;
@@ -38,7 +37,7 @@
     <div class="arc-reactor" id="jarvisBtn"><div class="inner-core"></div></div>
     <div id="response-bubble">SYSTEM ONLINE</div>
     <div class="loader" id="loader"></div>
-    <div id="status">READY SIR</div>
+    <div id="status">AWAITING INPUT</div>
 
     <script>
         const btn = document.getElementById('jarvisBtn');
@@ -46,7 +45,6 @@
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
-        // NEWEST API KEY INTEGRATED
         const API_KEY = "AIzaSyDwBmpDJhFZkZ4pUvN4hixLfIorTn7yn5w";
 
         const jarvisSays = (text) => {
@@ -58,19 +56,19 @@
             window.speechSynthesis.speak(msg);
         };
 
-        async function askGemini(promptText) {
+        async function askGemini(promptText, modelName = "gemini-2.5-flash") {
             loader.style.display = 'block';
-            statusText.innerText = "ACCESSING NEURAL LINK...";
+            statusText.innerText = `CONNECTING TO ${modelName.toUpperCase()}...`;
             
             try {
-                // Using Gemini 1.5 Flash for maximum speed
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+                // Using the v1 endpoint for better stability in 2026
+                const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${API_KEY}`;
                 
                 const response = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `You are J.A.R.V.I.S. from Iron Man. Be witty, sophisticated, and call the user 'Sir'. Answer this question: ${promptText}` }] }]
+                        contents: [{ parts: [{ text: `You are J.A.R.V.I.S. witty AI. Address user as Sir. Answer: ${promptText}` }] }]
                     })
                 });
 
@@ -78,43 +76,32 @@
                 loader.style.display = 'none';
 
                 if (data.candidates && data.candidates[0].content) {
-                    statusText.innerText = "ONLINE";
                     return data.candidates[0].content.parts[0].text;
-                } else if (data.error) {
-                    return `Sir, the uplink returned an error: ${data.error.message}. Please verify the API settings.`;
+                } else if (modelName === "gemini-2.5-flash") {
+                    // AUTO-RETRY with Backup model if Flash fails
+                    return await askGemini(promptText, "gemini-2.5-pro");
                 } else {
-                    return "Sir, I am receiving a blank signal. We may need to check the satellite alignment.";
+                    return "Sir, all satellite links are returning 404. We may need to verify the regional availability of these models.";
                 }
             } catch (error) {
                 loader.style.display = 'none';
-                return "Critical communication failure, Sir. The link has been severed.";
+                return "Critical communication failure, Sir.";
             }
         }
 
         const handleCommand = async (command) => {
             const input = command.toLowerCase().trim();
-            
-            // SYSTEM OVERRIDES
             if (input.includes("youtube")) {
-                jarvisSays("Accessing YouTube, Sir.");
+                jarvisSays("Opening YouTube, Sir.");
                 setTimeout(() => { window.location.href = "https://www.youtube.com"; }, 1500);
-            } 
-            else if (input.includes("time")) {
-                jarvisSays("The time is " + new Date().toLocaleTimeString() + ", Sir.");
-            }
-            else {
+            } else {
                 const aiResponse = await askGemini(command);
                 jarvisSays(aiResponse);
             }
         };
 
         btn.addEventListener('click', () => {
-            if (navigator.vibrate) navigator.vibrate(50);
-            
-            // Wake up audio for mobile browsers
-            const silent = new SpeechSynthesisUtterance("");
-            window.speechSynthesis.speak(silent);
-
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance("")); 
             const userIn = prompt("Awaiting Command, Sir:");
             if (userIn) handleCommand(userIn);
         });
