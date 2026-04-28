@@ -47,7 +47,6 @@
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
-        // UPDATED API KEY
         const API_KEY = "AIzaSyCWxK7dH7SRgYfQcIN-GvvbcbtAmy90YTk";
         const synth = window.speechSynthesis;
 
@@ -59,7 +58,7 @@
             const msg = new SpeechSynthesisUtterance(text);
             const voices = synth.getVoices();
             
-            // Specifically seeking British Male profile
+            // Prioritize British Male voice for Igris
             const preferredVoice = voices.find(v => v.name.includes('UK') && v.name.includes('Male')) || 
                                    voices.find(v => v.lang === 'en-GB') || 
                                    voices[0];
@@ -72,43 +71,42 @@
 
         async function fetchAI(promptText) {
             loader.style.display = 'block';
-            statusText.innerText = "UPLINKING TO IGRIS CORE...";
+            statusText.innerText = "QUERYING IGRIS NEURAL ENGINE...";
             
-            try {
-                // CHANGED TO GEMINI-2.0-FLASH TO FIX 404 ERROR
-                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
-                
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Your name is Igris. You are a sophisticated, witty, and loyal British AI assistant. Always call the user 'Sir'. Be brief. Question: ${promptText}` }] }]
-                    })
-                });
+            // Model list optimized for 2026 quota management
+            const models = ["gemini-1.5-flash-8b", "gemini-1.5-flash", "gemini-2.0-flash"];
+            
+            for (const model of models) {
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${API_KEY}`;
+                    const response = await fetch(url, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: `Your name is Igris. You are a loyal, witty British AI. Address user as Sir. ${promptText}` }] }]
+                        })
+                    });
 
-                const data = await response.json();
-                loader.style.display = 'none';
-
-                if (data.candidates && data.candidates[0].content) {
-                    statusText.innerText = "CONNECTED";
-                    return data.candidates[0].content.parts[0].text;
-                } else if (data.error) {
-                    return `Sir, the error persists: ${data.error.message}`;
-                } else {
-                    return "Sir, the signal is flatlining. I cannot parse the response.";
-                }
-            } catch (e) {
-                loader.style.display = 'none';
-                return "Communication blackout, Sir. Please check your network connection.";
+                    const data = await response.json();
+                    if (data.candidates && data.candidates[0].content) {
+                        loader.style.display = 'none';
+                        statusText.innerText = "CONNECTED";
+                        return data.candidates[0].content.parts[0].text;
+                    }
+                    if (data.error && data.error.status === "RESOURCE_EXHAUSTED") continue;
+                } catch (e) { console.warn(`Model ${model} unavailable.`); }
             }
+            
+            loader.style.display = 'none';
+            return "Sir, I've hit a quota wall. Google's servers require a moment to reset our bandwidth.";
         }
 
         const handleCommand = async (cmd) => {
             const input = cmd.toLowerCase().trim();
             if (input.includes("time")) {
-                igrisSays("The current time is " + new Date().toLocaleTimeString() + ", Sir.");
+                igrisSays("The time is " + new Date().toLocaleTimeString() + ", Sir.");
             } else if (input.includes("youtube")) {
-                igrisSays("Navigating to YouTube archives, Sir.");
+                igrisSays("Navigating to YouTube, Sir.");
                 setTimeout(() => { window.location.href = "https://www.youtube.com"; }, 1500);
             } else {
                 const response = await fetchAI(cmd);
@@ -118,7 +116,7 @@
 
         btn.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(50);
-            synth.speak(new SpeechSynthesisUtterance("")); // Audio wake-up for mobile
+            synth.speak(new SpeechSynthesisUtterance("")); 
             const userIn = prompt("Awaiting Command, Sir:");
             if (userIn) handleCommand(userIn);
         });
