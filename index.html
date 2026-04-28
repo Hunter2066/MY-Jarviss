@@ -9,7 +9,7 @@
         body {
             margin: 0; height: 100vh; background: #000;
             display: flex; flex-direction: column; justify-content: center;
-            align-items: center; color: var(--glow); font-family: 'Segoe UI', monospace;
+            align-items: center; color: var(--glow); font-family: 'Courier New', monospace;
             overflow: hidden;
         }
         .arc-reactor {
@@ -27,7 +27,7 @@
             background: rgba(0, 210, 255, 0.05); display: none; line-height: 1.5;
             font-size: 0.95rem; text-shadow: 0 0 5px rgba(0, 210, 255, 0.5);
         }
-        #status { margin-top: 20px; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.6; }
+        #status { margin-top: 20px; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.7; }
         .loader { width: 80%; height: 2px; background: #111; margin-top: 15px; position: relative; overflow: hidden; display: none; }
         .loader::after { content: ''; position: absolute; width: 40%; height: 100%; background: var(--glow); animation: scan 1.5s infinite; }
         @keyframes scan { 0% { left: -40%; } 100% { left: 100%; } }
@@ -38,7 +38,7 @@
     <div class="arc-reactor" id="jarvisBtn"><div class="inner-core"></div></div>
     <div id="response-bubble">SYSTEM ONLINE</div>
     <div class="loader" id="loader"></div>
-    <div id="status">AWAITING INPUT</div>
+    <div id="status">READY SIR</div>
 
     <script>
         const btn = document.getElementById('jarvisBtn');
@@ -46,8 +46,8 @@
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
-        // ACTIVE KEY
-        const API_KEY = "AIzaSyAoi3l4hDWwft2_artgcN7HCXNTPzPBjf0";
+        // NEWEST API KEY INTEGRATED
+        const API_KEY = "AIzaSyDwBmpDJhFZkZ4pUvN4hixLfIorTn7yn5w";
 
         const jarvisSays = (text) => {
             bubble.innerText = text;
@@ -63,19 +63,14 @@
             statusText.innerText = "ACCESSING NEURAL LINK...";
             
             try {
-                // v1beta endpoint with Flash 1.5
+                // Using Gemini 1.5 Flash for maximum speed
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
                 
                 const response = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `You are J.A.R.V.I.S. from Iron Man. Be witty and call the user 'Sir'. Respond to: ${promptText}` }] }],
-                        // Added safety settings to prevent empty responses (CORS/Safety errors)
-                        safetySettings: [
-                            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" }
-                        ]
+                        contents: [{ parts: [{ text: `You are J.A.R.V.I.S. from Iron Man. Be witty, sophisticated, and call the user 'Sir'. Answer this question: ${promptText}` }] }]
                     })
                 });
 
@@ -83,30 +78,29 @@
                 loader.style.display = 'none';
 
                 if (data.candidates && data.candidates[0].content) {
+                    statusText.innerText = "ONLINE";
                     return data.candidates[0].content.parts[0].text;
                 } else if (data.error) {
-                    return `Sir, the uplink returned an error: ${data.error.message}`;
+                    return `Sir, the uplink returned an error: ${data.error.message}. Please verify the API settings.`;
                 } else {
-                    return "I'm having trouble parsing that request, Sir. Shall I search the web instead?";
+                    return "Sir, I am receiving a blank signal. We may need to check the satellite alignment.";
                 }
             } catch (error) {
                 loader.style.display = 'none';
-                return "Critical communication failure, Sir.";
+                return "Critical communication failure, Sir. The link has been severed.";
             }
         }
 
         const handleCommand = async (command) => {
             const input = command.toLowerCase().trim();
             
-            // SYSTEM COMMANDS
+            // SYSTEM OVERRIDES
             if (input.includes("youtube")) {
-                jarvisSays("Opening YouTube, Sir.");
+                jarvisSays("Accessing YouTube, Sir.");
                 setTimeout(() => { window.location.href = "https://www.youtube.com"; }, 1500);
             } 
-            else if (input.includes("google") || input.includes("search")) {
-                const query = input.replace("google", "").replace("search", "").trim();
-                jarvisSays(`Searching the global archives for ${query}.`);
-                setTimeout(() => { window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`; }, 1500);
+            else if (input.includes("time")) {
+                jarvisSays("The time is " + new Date().toLocaleTimeString() + ", Sir.");
             }
             else {
                 const aiResponse = await askGemini(command);
@@ -116,9 +110,15 @@
 
         btn.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(50);
+            
+            // Wake up audio for mobile browsers
+            const silent = new SpeechSynthesisUtterance("");
+            window.speechSynthesis.speak(silent);
+
             const userIn = prompt("Awaiting Command, Sir:");
             if (userIn) handleCommand(userIn);
         });
     </script>
 </body>
 </html>
+
