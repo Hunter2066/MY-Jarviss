@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>J.A.R.V.I.S. Gemini</title>
+    <title>J.A.R.V.I.S. Elite</title>
     <style>
         :root { --glow: #00d2ff; }
         body {
             margin: 0; height: 100vh; background: #000;
             display: flex; flex-direction: column; justify-content: center;
-            align-items: center; color: var(--glow); font-family: 'Courier New', monospace;
+            align-items: center; color: var(--glow); font-family: 'Segoe UI', monospace;
             overflow: hidden;
         }
         .arc-reactor {
@@ -17,18 +17,17 @@
             border: 4px solid var(--glow); display: flex; 
             justify-content: center; align-items: center;
             box-shadow: 0 0 30px var(--glow), inset 0 0 15px var(--glow);
-            cursor: pointer; transition: transform 0.2s;
+            cursor: pointer; transition: 0.3s;
         }
-        .arc-reactor:active { transform: scale(0.95); }
         .inner-core { width: 50px; height: 50px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 20px #fff; }
         
         #response-bubble {
             margin-top: 30px; padding: 20px; border: 1px solid var(--glow);
             border-radius: 10px; width: 85%; max-height: 40vh; overflow-y: auto;
             background: rgba(0, 210, 255, 0.05); display: none; line-height: 1.5;
-            font-size: 0.95rem; box-shadow: 0 0 15px rgba(0, 210, 255, 0.1);
+            font-size: 0.95rem; text-shadow: 0 0 5px rgba(0, 210, 255, 0.5);
         }
-        #status { margin-top: 20px; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; }
+        #status { margin-top: 20px; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; opacity: 0.6; }
         .loader { width: 80%; height: 2px; background: #111; margin-top: 15px; position: relative; overflow: hidden; display: none; }
         .loader::after { content: ''; position: absolute; width: 40%; height: 100%; background: var(--glow); animation: scan 1.5s infinite; }
         @keyframes scan { 0% { left: -40%; } 100% { left: 100%; } }
@@ -36,11 +35,8 @@
 </head>
 <body>
 
-    <div class="arc-reactor" id="jarvisBtn">
-        <div class="inner-core"></div>
-    </div>
-    
-    <div id="response-bubble">SYSTEM INITIALIZED</div>
+    <div class="arc-reactor" id="jarvisBtn"><div class="inner-core"></div></div>
+    <div id="response-bubble">SYSTEM ONLINE</div>
     <div class="loader" id="loader"></div>
     <div id="status">AWAITING INPUT</div>
 
@@ -50,7 +46,7 @@
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
-        // SECURE KEY INTEGRATION
+        // ACTIVE KEY
         const API_KEY = "AIzaSyAoi3l4hDWwft2_artgcN7HCXNTPzPBjf0";
 
         const jarvisSays = (text) => {
@@ -58,75 +54,70 @@
             bubble.style.display = 'block';
             window.speechSynthesis.cancel();
             const msg = new SpeechSynthesisUtterance(text);
-            msg.rate = 1.0; 
-            msg.pitch = 0.85; 
+            msg.rate = 1.0; msg.pitch = 0.85; 
             window.speechSynthesis.speak(msg);
         };
 
-        async function fetchGemini(promptText) {
+        async function askGemini(promptText) {
             loader.style.display = 'block';
-            statusText.innerText = "ACCESSING CLOUD NEURAL LINK...";
+            statusText.innerText = "ACCESSING NEURAL LINK...";
             
             try {
+                // v1beta endpoint with Flash 1.5
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
                 
                 const response = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [{ text: `You are J.A.R.V.I.S. from Iron Man. You are helpful, slightly witty, and sophisticated. You must always address the user as 'Sir'. Keep your answers brief but brilliant. Question: ${promptText}` }]
-                        }]
+                        contents: [{ parts: [{ text: `You are J.A.R.V.I.S. from Iron Man. Be witty and call the user 'Sir'. Respond to: ${promptText}` }] }],
+                        // Added safety settings to prevent empty responses (CORS/Safety errors)
+                        safetySettings: [
+                            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" }
+                        ]
                     })
                 });
 
                 const data = await response.json();
                 loader.style.display = 'none';
-                statusText.innerText = "ONLINE";
 
                 if (data.candidates && data.candidates[0].content) {
                     return data.candidates[0].content.parts[0].text;
+                } else if (data.error) {
+                    return `Sir, the uplink returned an error: ${data.error.message}`;
                 } else {
-                    return "Sir, I am having trouble parsing the data packets. Please check the API status.";
+                    return "I'm having trouble parsing that request, Sir. Shall I search the web instead?";
                 }
             } catch (error) {
                 loader.style.display = 'none';
-                statusText.innerText = "UPLINK ERROR";
-                return "I'm afraid I can't reach the servers, Sir. The connection is being reset.";
+                return "Critical communication failure, Sir.";
             }
         }
 
-        const handleAction = async (command) => {
+        const handleCommand = async (command) => {
             const input = command.toLowerCase().trim();
             
             // SYSTEM COMMANDS
             if (input.includes("youtube")) {
-                jarvisSays("Opening YouTube for you, Sir.");
+                jarvisSays("Opening YouTube, Sir.");
                 setTimeout(() => { window.location.href = "https://www.youtube.com"; }, 1500);
             } 
             else if (input.includes("google") || input.includes("search")) {
                 const query = input.replace("google", "").replace("search", "").trim();
-                jarvisSays(`Searching global archives for ${query}.`);
+                jarvisSays(`Searching the global archives for ${query}.`);
                 setTimeout(() => { window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`; }, 1500);
             }
-            else if (input.includes("time")) {
-                jarvisSays("The time is exactly " + new Date().toLocaleTimeString() + ", Sir.");
-            }
             else {
-                // AI BRAIN
-                const aiResponse = await fetchGemini(command);
+                const aiResponse = await askGemini(command);
                 jarvisSays(aiResponse);
             }
         };
 
         btn.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(50);
-            
-            // Unlock audio for mobile
-            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
-
             const userIn = prompt("Awaiting Command, Sir:");
-            if (userIn) handleAction(userIn);
+            if (userIn) handleCommand(userIn);
         });
     </script>
 </body>
