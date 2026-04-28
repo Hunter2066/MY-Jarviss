@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>J.A.R.V.I.S. Elite</title>
+    <title>J.A.R.V.I.S. Gemini Link</title>
     <style>
         :root { --glow: #00d2ff; }
         body {
@@ -21,7 +21,7 @@
         .inner-core { width: 50px; height: 50px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 20px #fff; }
         #response-bubble {
             margin-top: 30px; padding: 20px; border: 1px solid var(--glow);
-            border-radius: 10px; width: 85%; max-height: 35vh; overflow-y: auto;
+            border-radius: 10px; width: 85%; max-height: 40vh; overflow-y: auto;
             background: rgba(0, 210, 255, 0.05); display: none; line-height: 1.4;
         }
         #status { margin-top: 20px; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; }
@@ -31,7 +31,11 @@
     </style>
 </head>
 <body>
-    <div class="arc-reactor" id="jarvisBtn"><div class="inner-core"></div></div>
+
+    <div class="arc-reactor" id="jarvisBtn">
+        <div class="inner-core"></div>
+    </div>
+    
     <div id="response-bubble">SYSTEM ONLINE</div>
     <div class="loader" id="loader"></div>
     <div id="status">READY SIR</div>
@@ -42,8 +46,8 @@
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
-        // YOUR KEY
-        const API_KEY = "sk-proj-5Jv52lVrunxDx1dTR-eL_wHyyikzNYE-Dwxzn-1urhu5R0xg59YxLZFHf2wOWVI3rcOHt6ZNxT3BlbkFJJgtMesUWfYfYzyGGCmepCE8AID1kOeZzkaJOSheiZvCn5Zz41VnlVXPzKwnANQkcQ9oSdw-fcA";
+        // PASTE YOUR GEMINI API KEY HERE
+        const GEMINI_KEY = "YOUR_GEMINI_API_KEY";
 
         const speak = (text) => {
             bubble.innerText = text;
@@ -54,56 +58,72 @@
             window.speechSynthesis.speak(msg);
         };
 
-        async function askAI(promptText) {
+        async function askGemini(promptText) {
             loader.style.display = 'block';
-            statusText.innerText = "BYPASSING FIREWALLS...";
+            statusText.innerText = "ACCESSING SATELLITE DATA...";
             
             try {
-                // Using a proxy to bypass CORS restrictions on GitHub Pages
-                const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+                
+                const response = await fetch(url, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${API_KEY}`
-                    },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        model: "gpt-3.5-turbo",
-                        messages: [{ role: "system", content: "You are J.A.R.V.I.S. witty and helpful assistant. Call user Sir." },
-                                   { role: "user", content: promptText }]
+                        contents: [{
+                            parts: [{ text: `You are J.A.R.V.I.S., a witty and highly advanced AI. Always refer to the user as 'Sir'. Keep responses concise but sophisticated. Question: ${promptText}` }]
+                        }]
                     })
                 });
 
                 const data = await response.json();
                 loader.style.display = 'none';
-                return data.choices[0].message.content;
+                
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    return data.candidates[0].content.parts[0].text;
+                } else {
+                    return "Sir, the neural link returned an empty data set. Diagnostics required.";
+                }
             } catch (error) {
                 loader.style.display = 'none';
-                return "Neural link failed. Sir, OpenAI may be blocking this direct browser request.";
+                console.error(error);
+                return "Critical error in communication arrays, Sir. Please check the console log.";
             }
         }
 
         const handleCommand = async (command) => {
             const input = command.toLowerCase().trim();
             
-            if (input.includes("google") || input.includes("search")) {
-                const query = input.replace("google", "").replace("search", "").trim();
-                speak(`Accessing Google archives for ${query}, Sir.`);
-                setTimeout(() => { window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`; }, 1500);
-            } 
-            else if (input.includes("youtube")) {
-                speak("Opening YouTube, Sir.");
+            // LOCAL SYSTEM OVERRIDES
+            if (input.includes("youtube")) {
+                speak("Accessing YouTube database, Sir.");
                 setTimeout(() => { window.location.href = "https://www.youtube.com"; }, 1500);
+            } 
+            else if (input.includes("time")) {
+                speak("The current time is " + new Date().toLocaleTimeString() + ", Sir.");
+            }
+            else if (input.includes("google") || input.includes("search")) {
+                const query = input.replace("google", "").replace("search", "").trim();
+                speak(`Searching Google servers for ${query}.`);
+                setTimeout(() => { window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`; }, 1500);
             }
             else {
-                const aiResponse = await askAI(command);
+                // EVERYTHING ELSE GOES TO GEMINI
+                const aiResponse = await askGemini(command);
                 speak(aiResponse);
             }
         };
 
         btn.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(60);
+            
+            // Wake up audio for mobile
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+
             const userPrompt = prompt("Awaiting Command, Sir:");
-            if (userPrompt) handleCommand(userPrompt);
+            if (userPrompt) {
+                statusText.innerText = "PROCESSING...";
+                handleCommand(userPrompt);
+            }
         });
     </script>
 </body>
