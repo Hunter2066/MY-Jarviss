@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>J.A.R.V.I.S. Neural Link</title>
+    <title>J.A.R.V.I.S. Elite</title>
     <style>
         :root { --glow: #00d2ff; }
         body {
             margin: 0; height: 100vh; background: #000;
             display: flex; flex-direction: column; justify-content: center;
-            align-items: center; color: var(--glow); font-family: 'Courier New', monospace;
+            align-items: center; color: var(--glow); font-family: 'Segoe UI', monospace;
             overflow: hidden;
         }
         .arc-reactor {
@@ -46,65 +46,73 @@
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
-        // NEWEST 2026 API KEY
+        // NEWEST 2026 STABLE API KEY
         const API_KEY = "AIzaSyDwBmpDJhFZkZ4pUvN4hixLfIorTn7yn5w";
         const synth = window.speechSynthesis;
 
-        // Sophisticated Voice Selection
         const jarvisSays = (text) => {
             bubble.innerText = text;
             bubble.style.display = 'block';
             synth.cancel();
             const msg = new SpeechSynthesisUtterance(text);
             
+            // Wait for voices to load
             const voices = synth.getVoices();
-            // Specifically looks for "Google UK English Male" or similar
+            // Specifically looks for "UK Male"
             const jarvisVoice = voices.find(v => v.name.includes('UK') && v.name.includes('Male')) || 
                                voices.find(v => v.lang === 'en-GB') || 
                                voices[0];
             
             if (jarvisVoice) msg.voice = jarvisVoice;
-            msg.rate = 0.95; // British sophistication
-            msg.pitch = 0.85; // Masculine depth
+            msg.rate = 0.95; 
+            msg.pitch = 0.85; 
             synth.speak(msg);
         };
 
-        // Model cycling to bypass 404/400 errors
         async function fetchAI(promptText) {
             loader.style.display = 'block';
-            statusText.innerText = "CALIBRATING MODELS...";
+            statusText.innerText = "ACCESSING GEMINI 3.1 FLASH...";
             
-            // 2026 Stable Model List
-            const models = ["gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-2.0-flash"];
-            
-            for (const model of models) {
-                try {
-                    const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${API_KEY}`;
-                    const response = await fetch(url, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: `You are J.A.R.V.I.S., a witty AI. Address user as Sir. ${promptText}` }] }]
-                        })
-                    });
-                    const data = await response.json();
-                    if (data.candidates) {
-                        loader.style.display = 'none';
-                        return data.candidates[0].content.parts[0].text;
-                    }
-                } catch (e) { console.warn(`Model ${model} unavailable.`); }
+            try {
+                // v1 STABLE ENDPOINT
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+                
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `You are J.A.R.V.I.S. witty AI. Address user as Sir. Be brief. ${promptText}` }] }]
+                    })
+                });
+
+                const data = await response.json();
+                loader.style.display = 'none';
+
+                if (data.candidates && data.candidates[0].content) {
+                    statusText.innerText = "CONNECTED";
+                    return data.candidates[0].content.parts[0].text;
+                } else if (data.error) {
+                    return `Sir, the server responded with Error ${data.error.code}: ${data.error.message}`;
+                } else {
+                    return "Sir, I am receiving a null signal. Please verify that the Generative Language API is enabled in your Google Cloud Console.";
+                }
+            } catch (e) {
+                loader.style.display = 'none';
+                return "Critical communication blackout, Sir. The browser is blocking the request.";
             }
-            loader.style.display = 'none';
-            return "Sir, it appears Google's regional servers are blocking our request. We may need to verify the API permissions.";
         }
 
         const handleAction = async (cmd) => {
-            const input = cmd.toLowerCase();
-            if (input.includes("youtube")) {
-                jarvisSays("Redirecting to YouTube, Sir.");
+            const input = cmd.toLowerCase().trim();
+            if (input.includes("time")) {
+                jarvisSays("It is " + new Date().toLocaleTimeString() + ", Sir.");
+            } else if (input.includes("youtube")) {
+                jarvisSays("Opening YouTube, Sir.");
                 setTimeout(() => { window.location.href = "https://www.youtube.com"; }, 1500);
-            } else if (input.includes("time")) {
-                jarvisSays("The time is " + new Date().toLocaleTimeString() + ", Sir.");
+            } else if (input.includes("google") || input.startsWith("search")) {
+                const query = input.replace("google", "").replace("search", "").trim();
+                jarvisSays(`Searching for ${query}, Sir.`);
+                setTimeout(() => { window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`; }, 1500);
             } else {
                 const response = await fetchAI(cmd);
                 jarvisSays(response);
@@ -113,12 +121,13 @@
 
         btn.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(50);
-            synth.speak(new SpeechSynthesisUtterance("")); // Mobile audio unlock
+            // Audio unlock
+            synth.speak(new SpeechSynthesisUtterance("")); 
             const userIn = prompt("Awaiting Command, Sir:");
             if (userIn) handleAction(userIn);
         });
 
-        // Pre-load voices for mobile
+        // Ensure voices are ready
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = () => synth.getVoices();
         }
