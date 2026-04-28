@@ -62,8 +62,8 @@
                                voices[0];
             
             if (jarvisVoice) msg.voice = jarvisVoice;
-            msg.rate = 0.95; // British pace
-            msg.pitch = 0.85; // Masculine depth
+            msg.rate = 0.95; 
+            msg.pitch = 0.85; 
             synth.speak(msg);
         };
 
@@ -72,7 +72,7 @@
             statusText.innerText = "UPLINKING TO GEMINI 3.1 FLASH...";
             
             // April 2026 Stable Model List
-            const models = ["gemini-3-flash-preview", "gemini-3.1-flash-lite-preview", "gemini-2.5-flash"];
+            const models = ["gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-2.5-flash"];
             
             for (const model of models) {
                 try {
@@ -86,7 +86,7 @@
                     });
 
                     const data = await response.json();
-                    if (data.candidates) {
+                    if (data.candidates && data.candidates[0].content) {
                         loader.style.display = 'none';
                         statusText.innerText = "ONLINE";
                         return data.candidates[0].content.parts[0].text;
@@ -94,7 +94,7 @@
                 } catch (e) { console.warn(`Model ${model} failed...`); }
             }
             loader.style.display = 'none';
-            return "Sir, the Google mainframe is currently inaccessible in your sector. Please verify your API permissions.";
+            return "Sir, the mainframe is inaccessible. Please ensure the 'Generative Language API' is enabled in your Google Cloud Console.";
         }
 
         const handleAction = async (cmd) => {
@@ -110,7 +110,7 @@
 
         btn.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(50);
-            synth.speak(new SpeechSynthesisUtterance("")); // Audio unlock
+            synth.speak(new SpeechSynthesisUtterance("")); 
             const userIn = prompt("Awaiting Command, Sir:");
             if (userIn) handleAction(userIn);
         });
