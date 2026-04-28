@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Igris Neural Link</title>
+    <title>I.H.R.I.S. Neural Link</title>
     <style>
         :root { --glow: #00d2ff; --bg: #000; }
         body {
             margin: 0; height: 100vh; background: var(--bg);
             display: flex; flex-direction: column; justify-content: center;
-            align-items: center; color: var(--glow); font-family: 'Segoe UI', sans-serif;
+            align-items: center; color: var(--glow); font-family: 'Segoe UI', Tahoma, sans-serif;
             overflow: hidden;
         }
         .arc-reactor {
@@ -36,22 +36,22 @@
 </head>
 <body>
 
-    <div class="arc-reactor" id="igrisBtn"><div class="inner-core"></div></div>
-    <div id="response-bubble">IGRIS ONLINE</div>
+    <div class="arc-reactor" id="ihrisBtn"><div class="inner-core"></div></div>
+    <div id="response-bubble">I.H.R.I.S. ONLINE</div>
     <div class="loader" id="loader"></div>
-    <div id="status">AWAITING COMMAND</div>
+    <div id="status">AWAITING INPUT</div>
 
     <script>
-        const btn = document.getElementById('igrisBtn');
+        const btn = document.getElementById('ihrisBtn');
         const statusText = document.getElementById('status');
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
-        // CALIBRATED API KEY
+        // STABLE 2026 API KEY
         const API_KEY = "AIzaSyCWxK7dH7SRgYfQcIN-GvvbcbtAmy90YTk";
         const synth = window.speechSynthesis;
 
-        const igrisSays = (text) => {
+        const ihrisSays = (text) => {
             bubble.innerText = text;
             bubble.style.display = 'block';
             synth.cancel();
@@ -59,7 +59,7 @@
             const msg = new SpeechSynthesisUtterance(text);
             const voices = synth.getVoices();
             
-            // Priority: British Male Voice
+            // Priority: British Male profile
             const preferredVoice = voices.find(v => v.name.includes('UK') && v.name.includes('Male')) || 
                                    voices.find(v => v.lang === 'en-GB') || 
                                    voices[0];
@@ -70,30 +70,60 @@
             synth.speak(msg);
         };
 
-        async function fetchAI(promptText, retryCount = 0) {
+        async function fetchAI(promptText) {
             loader.style.display = 'block';
-            statusText.innerText = "QUERYING IGRIS NEURAL ENGINE...";
+            statusText.innerText = "QUERYING I.H.R.I.S. CORE...";
             
-            // 2026 Model Fallback List
-            const models = ["gemini-1.5-flash-8b", "gemini-1.5-flash", "gemini-2.0-flash"];
-            const maxRetries = 2;
+            try {
+                // v1 STABLE with Gemini 3.1 Flash-Lite
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+                
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `Your name is I.H.R.I.S. (pronounced 'Iris'). You are a sophisticated, witty British AI assistant. Always call the user 'Sir'. Be brief. Question: ${promptText}` }] }]
+                    })
+                });
 
-            for (const model of models) {
-                try {
-                    const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${API_KEY}`;
-                    const response = await fetch(url, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: `Your name is Igris. You are a sophisticated British AI assistant. Always call the user 'Sir'. Be witty and very brief. Question: ${promptText}` }] }]
-                        })
-                    });
+                const data = await response.json();
+                loader.style.display = 'none';
 
-                    const data = await response.json();
+                if (data.candidates && data.candidates[0].content) {
+                    statusText.innerText = "CONNECTED";
+                    return data.candidates[0].content.parts[0].text;
+                } else {
+                    return "Sir, the neural link is experiencing a discrepancy. Please check the API status.";
+                }
+            } catch (e) {
+                loader.style.display = 'none';
+                return "Critical communication failure. Uplink severed, Sir.";
+            }
+        }
 
-                    // Handle Quota Issues
-                    if (data.error && data.error.status === "RESOURCE_EXHAUSTED") {
-                        if (retryCount < maxRetries) {
-                            const wait = Math.pow(2, retryCount) * 2000;
-                            status
-                            
+        const handleCommand = async (cmd) => {
+            const input = cmd.toLowerCase().trim();
+            if (input.includes("time")) {
+                ihrisSays("The current time is " + new Date().toLocaleTimeString() + ", Sir.");
+            } else if (input.includes("youtube")) {
+                ihrisSays("Accessing YouTube, Sir.");
+                setTimeout(() => { window.location.href = "https://www.youtube.com"; }, 1500);
+            } else {
+                const response = await fetchAI(cmd);
+                ihrisSays(response);
+            }
+        };
+
+        btn.addEventListener('click', () => {
+            if (navigator.vibrate) navigator.vibrate(50);
+            synth.speak(new SpeechSynthesisUtterance("")); // Unlock audio
+            const userIn = prompt("Awaiting Command, Sir:");
+            if (userIn) handleCommand(userIn);
+        });
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => synth.getVoices();
+        }
+    </script>
+</body>
+</html>
