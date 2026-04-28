@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>J.A.R.V.I.S. 2026</title>
+    <title>J.A.R.V.I.S. Neural Link</title>
     <style>
         :root { --glow: #00d2ff; }
         body {
@@ -38,7 +38,7 @@
     <div class="arc-reactor" id="jarvisBtn"><div class="inner-core"></div></div>
     <div id="response-bubble">SYSTEM ONLINE</div>
     <div class="loader" id="loader"></div>
-    <div id="status">AWAITING INPUT</div>
+    <div id="status">AWAITING COMMAND</div>
 
     <script>
         const btn = document.getElementById('jarvisBtn');
@@ -46,72 +46,83 @@
         const bubble = document.getElementById('response-bubble');
         const loader = document.getElementById('loader');
 
-        // UPDATED API KEY
+        // NEWEST 2026 API KEY
         const API_KEY = "AIzaSyDwBmpDJhFZkZ4pUvN4hixLfIorTn7yn5w";
+        const synth = window.speechSynthesis;
 
+        // Sophisticated Voice Selection
         const jarvisSays = (text) => {
             bubble.innerText = text;
             bubble.style.display = 'block';
-            window.speechSynthesis.cancel();
+            synth.cancel();
             const msg = new SpeechSynthesisUtterance(text);
-            msg.rate = 1.05; msg.pitch = 0.85; 
-            window.speechSynthesis.speak(msg);
+            
+            const voices = synth.getVoices();
+            // Specifically looks for "Google UK English Male" or similar
+            const jarvisVoice = voices.find(v => v.name.includes('UK') && v.name.includes('Male')) || 
+                               voices.find(v => v.lang === 'en-GB') || 
+                               voices[0];
+            
+            if (jarvisVoice) msg.voice = jarvisVoice;
+            msg.rate = 0.95; // British sophistication
+            msg.pitch = 0.85; // Masculine depth
+            synth.speak(msg);
         };
 
-        async function askGemini(promptText) {
+        // Model cycling to bypass 404/400 errors
+        async function fetchAI(promptText) {
             loader.style.display = 'block';
-            statusText.innerText = "UPLINKING TO GEMINI 3 FLASH...";
+            statusText.innerText = "CALIBRATING MODELS...";
             
-            // 2026 STABLE MODELS
-            const models = ["gemini-3-flash-preview", "gemini-3.1-flash-lite-preview", "gemini-2.5-flash"];
+            // 2026 Stable Model List
+            const models = ["gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-2.0-flash"];
             
-            for (let model of models) {
+            for (const model of models) {
                 try {
                     const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${API_KEY}`;
-                    
                     const response = await fetch(url, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: `You are J.A.R.V.I.S., a witty AI assistant. Call the user 'Sir'. Be brief. Answer: ${promptText}` }] }]
+                            contents: [{ parts: [{ text: `You are J.A.R.V.I.S., a witty AI. Address user as Sir. ${promptText}` }] }]
                         })
                     });
-
                     const data = await response.json();
-                    
-                    if (data.candidates && data.candidates[0].content) {
+                    if (data.candidates) {
                         loader.style.display = 'none';
-                        statusText.innerText = "CONNECTED";
                         return data.candidates[0].content.parts[0].text;
                     }
-                } catch (e) {
-                    console.warn(`Model ${model} failed, trying next...`);
-                }
+                } catch (e) { console.warn(`Model ${model} unavailable.`); }
             }
-            
             loader.style.display = 'none';
-            return "Sir, I've cycled through all available neural models, but the connection is being refused. Please verify your Google Cloud Billing status.";
+            return "Sir, it appears Google's regional servers are blocking our request. We may need to verify the API permissions.";
         }
 
-        const handleCommand = async (command) => {
-            const input = command.toLowerCase().trim();
-            if (input.includes("time")) {
-                jarvisSays("It is " + new Date().toLocaleTimeString() + ", Sir.");
-            } else if (input.includes("youtube")) {
-                jarvisSays("Accessing YouTube database.");
+        const handleAction = async (cmd) => {
+            const input = cmd.toLowerCase();
+            if (input.includes("youtube")) {
+                jarvisSays("Redirecting to YouTube, Sir.");
                 setTimeout(() => { window.location.href = "https://www.youtube.com"; }, 1500);
+            } else if (input.includes("time")) {
+                jarvisSays("The time is " + new Date().toLocaleTimeString() + ", Sir.");
             } else {
-                const aiResponse = await askGemini(command);
-                jarvisSays(aiResponse);
+                const response = await fetchAI(cmd);
+                jarvisSays(response);
             }
         };
 
         btn.addEventListener('click', () => {
-            if (navigator.vibrate) navigator.vibrate(60);
-            window.speechSynthesis.speak(new SpeechSynthesisUtterance("")); 
+            if (navigator.vibrate) navigator.vibrate(50);
+            synth.speak(new SpeechSynthesisUtterance("")); // Mobile audio unlock
             const userIn = prompt("Awaiting Command, Sir:");
-            if (userIn) handleCommand(userIn);
+            if (userIn) handleAction(userIn);
         });
+
+        // Pre-load voices for mobile
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => synth.getVoices();
+        }
     </script>
 </body>
 </html>
+
